@@ -1,6 +1,6 @@
 import os
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QListWidget, QListWidgetItem
-from PyQt6.QtCore import Qt, QTimer, QPoint
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QListWidget, QListWidgetItem, QFileIconProvider
+from PyQt6.QtCore import Qt, QTimer, QPoint, QFileInfo, QSize
 from PyQt6.QtGui import QCursor
 from config import WINDOW_WIDTH, WINDOW_HEIGHT
 
@@ -49,6 +49,7 @@ class PocketWindow(QWidget):
 
         layout = QVBoxLayout()
         self.list_widget = QListWidget(self)
+        self.list_widget.setIconSize(QSize(16, 16))
         self.list_widget.itemClicked.connect(self.on_item_clicked)
         
         layout.addWidget(self.list_widget)
@@ -94,8 +95,18 @@ class PocketWindow(QWidget):
     def set_data(self, folder_name, files):
         self.list_widget.clear()
         
-        header_item = QListWidgetItem(f"📁 {folder_name}")
+        provider = QFileIconProvider()
+        
+        header_item = QListWidgetItem(f"{folder_name}")
         header_item.setFlags(Qt.ItemFlag.NoItemFlags)
+        
+        if files:
+            first_file_info = QFileInfo(files[0]['path'])
+            parent_dir_info = QFileInfo(first_file_info.absolutePath())
+            header_item.setIcon(provider.icon(parent_dir_info))
+        else:
+            header_item.setIcon(provider.icon(QFileIconProvider.IconType.Folder))
+             
         self.list_widget.addItem(header_item)
         
         separator = QListWidgetItem("─" * 25)
@@ -108,10 +119,13 @@ class PocketWindow(QWidget):
             self.list_widget.addItem(empty_item)
         else:
             for f in files:
-                icon = "📂" if f['is_dir'] else "📄"
                 name = f['name'] if len(f['name']) < 25 else f['name'][:22] + "..."
+                item = QListWidgetItem(name)
                 
-                item = QListWidgetItem(f"{icon} {name}")
+                file_info = QFileInfo(f['path'])
+                icon = provider.icon(file_info)
+                item.setIcon(icon)
+                
                 item.setData(Qt.ItemDataRole.UserRole, f['path'])
                 self.list_widget.addItem(item)
 
