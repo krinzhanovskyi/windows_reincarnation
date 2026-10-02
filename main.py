@@ -1,33 +1,94 @@
-import sys
-from PyQt6.QtWidgets import QApplication
-from backend.mouse_tracker import MouseTracker
-from ui.pocket_window import PocketWindow
-from backend.win_api import get_desktop_folder_under_cursor
+"""
+Точка входа Project Reincarnation.
 
-def main():
+Изменения относительно исходной версии:
+- логирование в файл с ротацией (под pythonw консоли нет, print бесполезен);
+- Ctrl+C снова завершает процесс;
+- QApplication создаётся ДО импорта модулей с WinAPI/UIA (DPI awareness);
+- корректная остановка воркер-потока при выходе.
+"""
+
+from __future__ import annotations
+
+import logging
+import os
+import signal
+import sys
+from logging.handlers import RotatingFileHandler
+from pathlib import Path
+
+from PyQt6.QtCore import QPoint
+from PyQt6.QtWidgets import QApplication
+
+log = logging.getLogger("reincarnation")
+
+
+def setup_logging() -> Path:
+    """
+    Лог в %LOCALAPPDATA%\\ProjectReincarnation\\logs\\app.log + консоль.
+    Ротация: 3 файла по 1 МБ, чтобы лог не рос бесконечно.
+    """
+    base = Path(os.environ.get("LOCALAPPDATA", Path.home())) / "ProjectReincarnation" / "logs"
+    base.mkdir(parents=True, exist_ok=True)
+    log_file = base / "app.log"
+
+    fmt = logging.Formatter(
+        "%(asctime)s %(levelname)-7s [%(threadName)s] %(name)s: %(message)s"
+    )
+
+    file_handler = RotatingFileHandler(log_file, maxBytes=1_000_000, backupCount=3,
+                                       encoding="utf-8")
+    file_handler.setFormatter(fmt)
+
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG if os.environ.get("REINCARNATION_DEBUG") else logging.INFO)
+    root.addHandler(file_handler)
+
+    # Под pythonw sys.stderr == None: консольный хендлер добавляем только при наличии консоли.
+    if sys.stderr is not None:
+        console = logging.StreamHandler()
+        console.setFormatter(fmt)
+        root.addHandler(console)
+
+    return log_file
+
+
+def main() -> int:
+    log_file = setup_logging()
+
+    # Пока Qt крутит event loop в C++, Python-обработчик SIGINT не выполняется,
+    # и Ctrl+C игнорируется. SIG_DFL возвращает поведение ОС: процесс
+    # завершается сразу (без aboutToQuit; для утилиты без несохранённых
+    # данных это приемлемо). Нормальный выход появится вместе с треем.
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+    # QApplication создаём ДО импорта backend: Qt6 при создании выставляет
+    # процессу Per-Monitor-V2 DPI awareness. Только после этого GetCursorPos
+    # возвращает физические пиксели. Отложенный импорт гарантирует, что
+    # никакой код из backend (включая импорт uiautomation) не отработает раньше.
     app = QApplication(sys.argv)
-    app.setQuitOnLastWindowClosed(False) 
-    
+    app.setQuitOnLastWindowClosed(False)
+
+    from backend.mouse_tracker import MouseTracker
+    from backend.win_api import FolderHit
+    from ui.pocket_window import PocketWindow
+
     pocket = PocketWindow()
     tracker = MouseTracker()
 
-    def handle_hover(x, y):
-        folder_path = get_desktop_folder_under_cursor(x, y)
-        
-        if folder_path:
-            print(f"[*] Найдена папка: {folder_path}")
-            pocket.show_at(x, y)
-        else:
-            pass
+    def on_hover(hit: FolderHit, logical_pos: QPoint) -> None:
+        # Координаты логические: именно их ожидает QWidget.move().
+        pocket.label.setText(hit.name)
+        pocket.show_at(logical_pos.x(), logical_pos.y())
 
-    tracker.hover.connect(handle_hover)
-    tracker.move.connect(pocket.hide_window)
-    
-    print("Запуск Project Reincarnation...")
-    print("Теперь виджет появится ТОЛЬКО над папками на рабочем столе.")
-    
+    tracker.hover.connect(on_hover)
+    tracker.moved.connect(pocket.hide_window)
+    app.aboutToQuit.connect(tracker.stop)
+
+    log.info("Project Reincarnation started, log: %s", log_file)
     tracker.start()
-    sys.exit(app.exec())
+    return app.exec()
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
