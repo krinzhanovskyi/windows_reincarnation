@@ -56,37 +56,6 @@ Project_reincarnation/
 
     ```
 
-## Roadmap
-
-The project is divided into logical phases, from basic system integration to a full release as a complete desktop application.
-
-### Phase 1: Core and System Integration (Completed)
-
-- [x] **Cursor Tracking:** Background monitoring of mouse coordinates via built-in `PyQt` timers without blocking the main thread.
-- [x] **Basic UI:** Creating a transparent widget without system borders (FramelessWindowHint) operating in stealth mode for the taskbar (`Tool`).
-- [x] **Windows API System Hooks:** Intelligent parsing of `explorer.exe` (SysListView32) to accurately identify folders and ignore shortcuts, files, or empty space.
-- [x] **DPI Awareness:** Automatic coordinate correction for non-standard Windows screen scaling via `ctypes`.
-
-### Phase 2: Data and Content (Current started)
-
-- [ ] **`file_reader.py` Module:** Parsing directory contents with smart sorting (e.g., showing recently modified files first).
-- [ ] **Content Filtering:** Limiting the number of displayed items (protection against freezing on folders with 10,000 files) and hiding system files (like `desktop.ini`).
-- [ ] **Dynamic UI Generation:** Rendering the file list inside the "pocket" (name, size, date).
-- [ ] **Icon Extraction:** Fetching and caching native Windows system icons for each file type in the list.
-
-### Phase 3: Interactivity and UX (Polishing)
-
-- [ ] **Click-to-Open:** Implementing clickable elements in the "pocket" to instantly open a file with the standard Windows program (`os.startfile`).
-- [ ] **Smart Positioning:** Algorithm to prevent window cropping (shifting the widget if the folder is near the edge or corner of the monitor).
-- [ ] **Animations and Transitions:** Smooth fade-in and fade-out of the window when hover triggers are activated.
-- [ ] **Custom Scrollbar:** Adding a stylized scrollbar for folders whose contents exceed the default window height.
-
-### Phase 4: Release and Scaling (Future Plans)
-
-- [ ] **System Tray:** Moving control to the system tray (near the clock) with a context menu for pause, exit, and settings.
-- [ ] **Global Hotkeys:** Keyboard combinations to quickly toggle the widgets on/off (useful while gaming or working in full-screen applications).
-- [ ] **`.exe` Packaging:** Compiling the project via PyInstaller into a single executable file so the program runs on any PC without needing to install Python.
-
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](https://github.com/krinzhanovskyi/Project_reincarnation_28082026/blob/main/LICENSE) file for details.
