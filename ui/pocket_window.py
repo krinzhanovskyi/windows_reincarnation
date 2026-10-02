@@ -8,7 +8,6 @@ class PocketWindow(QWidget):
         self.init_ui()
 
     def init_ui(self):
-        # flags
         flags = (
             Qt.WindowType.FramelessWindowHint | 
             Qt.WindowType.WindowStaysOnTopHint |
@@ -16,12 +15,9 @@ class PocketWindow(QWidget):
             Qt.WindowType.WindowDoesNotAcceptFocus
         )
         self.setWindowFlags(flags)
-        
-        # screen sets
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.resize(WINDOW_WIDTH, WINDOW_HEIGHT)
 
-        # style.css window
         self.setStyleSheet("""
             QWidget {
                 background-color: rgba(30, 30, 30, 230);
@@ -30,9 +26,9 @@ class PocketWindow(QWidget):
             }
         """)
 
-        # text window
         layout = QVBoxLayout()
-        self.label = QLabel("Содержимое папки будет здесь...", self)
+        # Имя папки будет писаться сюда
+        self.label = QLabel("", self)
         self.label.setStyleSheet("color: white; font-size: 14px; background: transparent; border: none;")
         self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
@@ -40,7 +36,22 @@ class PocketWindow(QWidget):
         self.setLayout(layout)
 
     def show_at(self, x, y):
-        self.move(int(x) + 20, int(y) + 20)
+        # Изначально пробуем открыться справа-снизу от курсора
+        target_x = x + 20
+        target_y = y + 20
+        
+        # Получаем рабочую область текущего экрана (без учета панели задач)
+        screen_geo = self.screen().availableGeometry()
+        
+        # Если окно вылезает за правый край — сдвигаем его влево от курсора
+        if target_x + self.width() > screen_geo.right():
+            target_x = x - self.width() - 10
+            
+        # Если окно вылезает за нижний край — сдвигаем его вверх от курсора
+        if target_y + self.height() > screen_geo.bottom():
+            target_y = y - self.height() - 10
+            
+        self.move(int(target_x), int(target_y))
         self.show()
 
     def hide_window(self):
