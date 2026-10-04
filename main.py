@@ -1,10 +1,12 @@
 from __future__ import annotations
+
 import logging
 import os
 import signal
 import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
+
 from PyQt6.QtCore import QPoint
 from PyQt6.QtWidgets import QApplication
 
@@ -38,6 +40,7 @@ def main() -> int:
     from ui.pocket_window import PocketWindow
     from backend.file_reader import get_folder_contents
     from ui.tray_icon import AppTrayIcon
+    from config import MAX_FILES_TO_SHOW
 
     pocket = PocketWindow()
     tracker = MouseTracker()
@@ -49,7 +52,7 @@ def main() -> int:
         if tray.is_paused:
             return
             
-        files = get_folder_contents(hit.path, max_items=10)
+        files = get_folder_contents(hit.path, max_items=MAX_FILES_TO_SHOW)
         pocket.set_data(hit.name, files)
         pocket.show_at(logical_pos.x(), logical_pos.y())
 

@@ -24,8 +24,7 @@ class PocketWindow(QWidget):
         )
         self.setWindowFlags(flags)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.resize(WINDOW_WIDTH, WINDOW_HEIGHT)
-
+        self.setFixedWidth(WINDOW_WIDTH)
         self.setStyleSheet("""
             QWidget {
                 background-color: rgba(30, 30, 30, 230);
@@ -46,9 +45,28 @@ class PocketWindow(QWidget):
             QListWidget::item:hover {
                 background-color: rgba(255, 255, 255, 30);
             }
+            QScrollBar:vertical {
+                border: none;
+                background: rgba(30, 30, 30, 100);
+                width: 6px;
+                border-radius: 3px;
+                margin: 0px 0px 0px 0px;
+            }
+            QScrollBar::handle:vertical {
+                background: rgba(255, 255, 255, 80);
+                min-height: 20px;
+                border-radius: 3px;
+            }
+            QScrollBar::handle:vertical:hover {
+                background: rgba(255, 255, 255, 150);
+            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                height: 0px;
+            }
         """)
 
         layout = QVBoxLayout()
+        layout.setContentsMargins(10, 10, 10, 10) # Аккуратные отступы от краев
         self.list_widget = QListWidget(self)
         self.list_widget.setIconSize(QSize(16, 16))
         self.list_widget.itemClicked.connect(self.on_item_clicked)
@@ -128,7 +146,12 @@ class PocketWindow(QWidget):
                 
                 item.setData(Qt.ItemDataRole.UserRole, f['path'])
                 self.list_widget.addItem(item)
-                
+        
+
+        calculated_height = (self.list_widget.count() * 28) + 25
+        final_height = min(calculated_height, WINDOW_HEIGHT)
+        self.setFixedHeight(final_height)
+
     def on_item_clicked(self, item):
         path = item.data(Qt.ItemDataRole.UserRole)
         if path:
