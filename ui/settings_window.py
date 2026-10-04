@@ -9,7 +9,7 @@ class SettingsWindow(QWidget):
         config.updated.connect(self.load_from_config)
 
     def init_ui(self):
-        self.setWindowTitle("Настройки виджета")
+        self.setWindowTitle("Settings")
         self.resize(320, 200)
         self.setWindowFlags(Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Tool)
         
@@ -42,10 +42,10 @@ class SettingsWindow(QWidget):
         self.delay_label = QLabel()
         self.delay_slider = QSlider(Qt.Orientation.Horizontal)
         self.delay_slider.setMinimum(1)
-        self.delay_slider.setMaximum(20) # 0.1 - 2.0 сек
+        self.delay_slider.setMaximum(20)
         self.delay_slider.valueChanged.connect(self.update_labels)
 
-        self.save_btn = QPushButton("Сохранить и применить")
+        self.save_btn = QPushButton("Save")
         self.save_btn.clicked.connect(self.save_settings)
 
         layout.addWidget(self.files_label)
@@ -64,8 +64,8 @@ class SettingsWindow(QWidget):
         self.update_labels()
 
     def update_labels(self):
-        self.files_label.setText(f"Максимум файлов: {self.files_slider.value()}")
-        self.delay_label.setText(f"Задержка появления: {self.delay_slider.value() / 10.0} сек")
+        self.files_label.setText(f"Max files are: {self.files_slider.value()}")
+        self.delay_label.setText(f"Time to show menu: {self.delay_slider.value() / 10.0} seconds")
 
     def save_settings(self):
         config.update_settings(

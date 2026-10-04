@@ -23,17 +23,17 @@ class AppTrayIcon(QSystemTrayIcon):
 
         self.menu = QMenu()
 
-        self.settings_action = QAction("Настройки", self.menu)
+        self.settings_action = QAction("Settings", self.menu)
         self.settings_action.triggered.connect(self.settings_window.show)
         self.menu.addAction(self.settings_action)
 
-        self.pause_action = QAction("Пауза", self.menu)
+        self.pause_action = QAction("Pause", self.menu)
         self.pause_action.triggered.connect(self.toggle_pause)
         self.menu.addAction(self.pause_action)
 
         self.menu.addSeparator()
 
-        self.exit_action = QAction("Выход", self.menu)
+        self.exit_action = QAction("Off", self.menu)
         self.exit_action.triggered.connect(self.app.quit)
         self.menu.addAction(self.exit_action)
 
@@ -42,8 +42,8 @@ class AppTrayIcon(QSystemTrayIcon):
     def toggle_pause(self):
         self.is_paused = not self.is_paused
         if self.is_paused:
-            self.pause_action.setText("Возобновить")
+            self.pause_action.setText("Resume")
             self.setToolTip("Project Reincarnation (Пауза)")
         else:
-            self.pause_action.setText("Пауза")
+            self.pause_action.setText("Pause")
             self.setToolTip("Project Reincarnation")

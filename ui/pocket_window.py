@@ -77,7 +77,7 @@ class PocketWindow(QWidget):
         self.setLayout(layout)
 
     def show_at(self, x, y):
-        self.setFixedWidth(config.window_width) # Обновляем ширину при показе
+        self.setFixedWidth(config.window_width)
         self.trigger_pos = QPoint(x, y)
         
         target_x = x + 5
@@ -136,7 +136,7 @@ class PocketWindow(QWidget):
         self.list_widget.addItem(separator)
         
         if not files:
-            empty_item = QListWidgetItem("Папка пуста")
+            empty_item = QListWidgetItem("Folder is leer")
             empty_item.setFlags(Qt.ItemFlag.NoItemFlags)
             self.list_widget.addItem(empty_item)
         else:

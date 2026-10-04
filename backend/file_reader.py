@@ -29,8 +29,8 @@ def get_folder_contents(folder_path, max_items=15):
         return items[:max_items]
 
     except PermissionError:
-        print(f"[!] Нет доступа к папке: {folder_path}")
+        print(f"[!] Can't open folder: {folder_path}")
         return []
     except Exception as e:
-        print(f"[!] Ошибка чтения папки {folder_path}: {e}")
+        print(f"[!] Folder read error {folder_path}: {e}")
         return []
