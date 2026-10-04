@@ -3,6 +3,7 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QListWidget, QListWidgetItem, 
 from PyQt6.QtCore import Qt, QTimer, QPoint, QFileInfo, QSize
 from PyQt6.QtGui import QCursor
 from config import WINDOW_WIDTH, WINDOW_HEIGHT
+from backend.icon_extractor import get_file_icon
 
 class PocketWindow(QWidget):
     def __init__(self):
@@ -122,13 +123,12 @@ class PocketWindow(QWidget):
                 name = f['name'] if len(f['name']) < 25 else f['name'][:22] + "..."
                 item = QListWidgetItem(name)
                 
-                file_info = QFileInfo(f['path'])
-                icon = provider.icon(file_info)
+                icon = get_file_icon(f['path'], provider)
                 item.setIcon(icon)
                 
                 item.setData(Qt.ItemDataRole.UserRole, f['path'])
                 self.list_widget.addItem(item)
-
+                
     def on_item_clicked(self, item):
         path = item.data(Qt.ItemDataRole.UserRole)
         if path:
