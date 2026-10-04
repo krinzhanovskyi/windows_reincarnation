@@ -1,5 +1,6 @@
+import os
 from PyQt6.QtWidgets import QSystemTrayIcon, QMenu, QStyle
-from PyQt6.QtGui import QAction
+from PyQt6.QtGui import QAction, QIcon
 
 class AppTrayIcon(QSystemTrayIcon):
     def __init__(self, app, parent=None):
@@ -7,8 +8,14 @@ class AppTrayIcon(QSystemTrayIcon):
         self.app = app
         self.is_paused = False
         
-        icon = self.app.style().standardIcon(QStyle.StandardPixmap.SP_ComputerIcon)
-        self.setIcon(icon)
+        root_dir = os.path.dirname(os.path.dirname(__file__))
+        icon_path = os.path.join(root_dir, 'icon.ico')
+        
+        if os.path.exists(icon_path):
+            self.setIcon(QIcon(icon_path))
+        else:
+            self.setIcon(self.app.style().standardIcon(QStyle.StandardPixmap.SP_ComputerIcon))
+            
         self.setToolTip("Project Reincarnation")
 
         self.menu = QMenu()
