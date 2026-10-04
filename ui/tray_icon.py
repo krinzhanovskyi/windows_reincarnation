@@ -1,12 +1,15 @@
 import os
 from PyQt6.QtWidgets import QSystemTrayIcon, QMenu, QStyle
 from PyQt6.QtGui import QAction, QIcon
+from ui.settings_window import SettingsWindow
 
 class AppTrayIcon(QSystemTrayIcon):
     def __init__(self, app, parent=None):
         super().__init__(parent)
         self.app = app
         self.is_paused = False
+        
+        self.settings_window = SettingsWindow()
         
         root_dir = os.path.dirname(os.path.dirname(__file__))
         icon_path = os.path.join(root_dir, 'icon.ico')
@@ -19,6 +22,10 @@ class AppTrayIcon(QSystemTrayIcon):
         self.setToolTip("Project Reincarnation")
 
         self.menu = QMenu()
+
+        self.settings_action = QAction("Настройки", self.menu)
+        self.settings_action.triggered.connect(self.settings_window.show)
+        self.menu.addAction(self.settings_action)
 
         self.pause_action = QAction("Пауза", self.menu)
         self.pause_action.triggered.connect(self.toggle_pause)

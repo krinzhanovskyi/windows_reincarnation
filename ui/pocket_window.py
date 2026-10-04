@@ -2,7 +2,7 @@ import os
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QListWidget, QListWidgetItem, QFileIconProvider
 from PyQt6.QtCore import Qt, QTimer, QPoint, QFileInfo, QSize
 from PyQt6.QtGui import QCursor
-from config import WINDOW_WIDTH, WINDOW_HEIGHT
+from backend.config_manager import config
 from backend.icon_extractor import get_file_icon
 
 class PocketWindow(QWidget):
@@ -24,7 +24,9 @@ class PocketWindow(QWidget):
         )
         self.setWindowFlags(flags)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.setFixedWidth(WINDOW_WIDTH)
+        
+        self.setFixedWidth(config.window_width)
+
         self.setStyleSheet("""
             QWidget {
                 background-color: rgba(30, 30, 30, 230);
@@ -66,7 +68,7 @@ class PocketWindow(QWidget):
         """)
 
         layout = QVBoxLayout()
-        layout.setContentsMargins(10, 10, 10, 10) # Аккуратные отступы от краев
+        layout.setContentsMargins(10, 10, 10, 10)
         self.list_widget = QListWidget(self)
         self.list_widget.setIconSize(QSize(16, 16))
         self.list_widget.itemClicked.connect(self.on_item_clicked)
@@ -75,6 +77,7 @@ class PocketWindow(QWidget):
         self.setLayout(layout)
 
     def show_at(self, x, y):
+        self.setFixedWidth(config.window_width) # Обновляем ширину при показе
         self.trigger_pos = QPoint(x, y)
         
         target_x = x + 5
@@ -147,9 +150,8 @@ class PocketWindow(QWidget):
                 item.setData(Qt.ItemDataRole.UserRole, f['path'])
                 self.list_widget.addItem(item)
         
-
         calculated_height = (self.list_widget.count() * 28) + 25
-        final_height = min(calculated_height, WINDOW_HEIGHT)
+        final_height = min(calculated_height, config.window_height)
         self.setFixedHeight(final_height)
 
     def on_item_clicked(self, item):

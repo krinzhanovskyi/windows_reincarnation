@@ -40,7 +40,7 @@ def main() -> int:
     from ui.pocket_window import PocketWindow
     from backend.file_reader import get_folder_contents
     from ui.tray_icon import AppTrayIcon
-    from config import MAX_FILES_TO_SHOW
+    from backend.config_manager import config
 
     pocket = PocketWindow()
     tracker = MouseTracker()
@@ -52,7 +52,7 @@ def main() -> int:
         if tray.is_paused:
             return
             
-        files = get_folder_contents(hit.path, max_items=MAX_FILES_TO_SHOW)
+        files = get_folder_contents(hit.path, max_items=config.max_files)
         pocket.set_data(hit.name, files)
         pocket.show_at(logical_pos.x(), logical_pos.y())
 

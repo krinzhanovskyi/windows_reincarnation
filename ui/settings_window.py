@@ -1,0 +1,75 @@
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QSlider, QPushButton
+from PyQt6.QtCore import Qt
+from backend.config_manager import config
+
+class SettingsWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.init_ui()
+        config.updated.connect(self.load_from_config)
+
+    def init_ui(self):
+        self.setWindowTitle("Настройки виджета")
+        self.resize(320, 200)
+        self.setWindowFlags(Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Tool)
+        
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #1e1e1e;
+                color: white;
+                font-size: 14px;
+            }
+            QPushButton {
+                background-color: #333;
+                border: 1px solid #555;
+                border-radius: 5px;
+                padding: 8px;
+            }
+            QPushButton:hover {
+                background-color: #444;
+            }
+        """)
+
+        layout = QVBoxLayout()
+        layout.setSpacing(15)
+
+        self.files_label = QLabel()
+        self.files_slider = QSlider(Qt.Orientation.Horizontal)
+        self.files_slider.setMinimum(1)
+        self.files_slider.setMaximum(50)
+        self.files_slider.valueChanged.connect(self.update_labels)
+
+        self.delay_label = QLabel()
+        self.delay_slider = QSlider(Qt.Orientation.Horizontal)
+        self.delay_slider.setMinimum(1)
+        self.delay_slider.setMaximum(20) # 0.1 - 2.0 сек
+        self.delay_slider.valueChanged.connect(self.update_labels)
+
+        self.save_btn = QPushButton("Сохранить и применить")
+        self.save_btn.clicked.connect(self.save_settings)
+
+        layout.addWidget(self.files_label)
+        layout.addWidget(self.files_slider)
+        layout.addWidget(self.delay_label)
+        layout.addWidget(self.delay_slider)
+        layout.addStretch()
+        layout.addWidget(self.save_btn)
+
+        self.setLayout(layout)
+        self.load_from_config()
+
+    def load_from_config(self):
+        self.files_slider.setValue(config.max_files)
+        self.delay_slider.setValue(int(config.hover_delay * 10))
+        self.update_labels()
+
+    def update_labels(self):
+        self.files_label.setText(f"Максимум файлов: {self.files_slider.value()}")
+        self.delay_label.setText(f"Задержка появления: {self.delay_slider.value() / 10.0} сек")
+
+    def save_settings(self):
+        config.update_settings(
+            max_files=self.files_slider.value(),
+            hover_delay=self.delay_slider.value() / 10.0
+        )
+        self.hide()
