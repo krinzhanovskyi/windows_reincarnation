@@ -1,7 +1,7 @@
 import os
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QListWidget, QListWidgetItem, 
                              QFileIconProvider, QStyleOption, QStyle)
-from PyQt6.QtCore import Qt, QTimer, QPoint, QFileInfo, QSize
+from PyQt6.QtCore import Qt, QTimer, QPoint, QFileInfo, QSize, QPropertyAnimation, QEasingCurve
 from PyQt6.QtGui import QCursor, QPainter
 from backend.config_manager import config
 from backend.icon_extractor import get_file_icon
@@ -11,6 +11,7 @@ class PocketWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.trigger_pos = None
+        self._is_fading_out = False 
         self.init_ui()
         
         self.mouse_timer = QTimer(self)
@@ -33,6 +34,11 @@ class PocketWindow(QWidget):
         
         self.setFixedWidth(config.window_width)
         self.update_theme()
+
+        self.fade_anim = QPropertyAnimation(self, b"windowOpacity")
+        self.fade_anim.setDuration(150) 
+        self.fade_anim.setEasingCurve(QEasingCurve.Type.InOutQuad) 
+        self.fade_anim.finished.connect(self._on_fade_finished)
 
         layout = QVBoxLayout()
         layout.setContentsMargins(8, 8, 8, 8)
@@ -78,10 +84,19 @@ class PocketWindow(QWidget):
             target_y = y - self.height() - 15
             
         self.move(int(target_x), int(target_y))
-        self.show()
+        
+        if not self.isVisible():
+            self.setWindowOpacity(0.0) 
+            self.show()
+
+        self._is_fading_out = False
+        self.fade_anim.stop()
+        self.fade_anim.setStartValue(self.windowOpacity())
+        self.fade_anim.setEndValue(1.0)
+        self.fade_anim.start()
 
     def check_mouse_leave(self):
-        if not self.isVisible() or not self.trigger_pos:
+        if not self.isVisible() or not self.trigger_pos or self._is_fading_out:
             return
 
         pos = QCursor.pos()
@@ -97,7 +112,19 @@ class PocketWindow(QWidget):
         self.hide_window()
 
     def hide_window(self):
-        self.hide()
+        if not self.isVisible() or self._is_fading_out:
+            return
+
+        self._is_fading_out = True
+        self.fade_anim.stop()
+        self.fade_anim.setStartValue(self.windowOpacity())
+        self.fade_anim.setEndValue(0.0)
+        self.fade_anim.start()
+
+    def _on_fade_finished(self):
+        if self._is_fading_out:
+            self.hide()
+            self._is_fading_out = False
 
     def set_data(self, folder_name, files):
         self.list_widget.clear()
@@ -125,7 +152,7 @@ class PocketWindow(QWidget):
         self.list_widget.addItem(separator)
         
         if not files:
-            empty_item = QListWidgetItem("Folder is leer")
+            empty_item = QListWidgetItem("Папка пуста")
             empty_item.setFlags(Qt.ItemFlag.NoItemFlags)
             empty_item.setForeground(Qt.GlobalColor.gray)
             self.list_widget.addItem(empty_item)
