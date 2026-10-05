@@ -1,7 +1,8 @@
 import os
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QListWidget, QListWidgetItem, QFileIconProvider
+from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QListWidget, QListWidgetItem, 
+                             QFileIconProvider, QStyleOption, QStyle)
 from PyQt6.QtCore import Qt, QTimer, QPoint, QFileInfo, QSize
-from PyQt6.QtGui import QCursor
+from PyQt6.QtGui import QCursor, QPainter
 from backend.config_manager import config
 from backend.icon_extractor import get_file_icon
 
@@ -24,11 +25,14 @@ class PocketWindow(QWidget):
         )
         self.setWindowFlags(flags)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self.setObjectName("PocketWindow")
         
         self.setFixedWidth(config.window_width)
 
         self.setStyleSheet("""
-            QWidget {
+            #PocketWindow {
                 background-color: rgba(30, 30, 30, 230);
                 border-radius: 15px;
                 border: 1px solid #555;
@@ -73,8 +77,24 @@ class PocketWindow(QWidget):
         self.list_widget.setIconSize(QSize(16, 16))
         self.list_widget.itemClicked.connect(self.on_item_clicked)
         
+        self.list_widget.setVerticalScrollMode(QListWidget.ScrollMode.ScrollPerPixel)
+        
         layout.addWidget(self.list_widget)
         self.setLayout(layout)
+
+    def paintEvent(self, event):
+        opt = QStyleOption()
+        opt.initFrom(self)
+        p = QPainter(self)
+        self.style().drawPrimitive(QStyle.PrimitiveElement.PE_Widget, opt, p, self)
+
+    def wheelEvent(self, event):
+        scrollbar = self.list_widget.verticalScrollBar()
+        delta = event.angleDelta().y()
+        if delta != 0:
+            step = int(-delta / 120) * 40
+            scrollbar.setValue(scrollbar.value() + step)
+        event.accept()
 
     def show_at(self, x, y):
         self.setFixedWidth(config.window_width)
