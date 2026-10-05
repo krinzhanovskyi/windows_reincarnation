@@ -7,7 +7,7 @@ import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
-from PyQt6.QtCore import QPoint
+from PyQt6.QtCore import QPoint, QSharedMemory
 from PyQt6.QtWidgets import QApplication
 
 log = logging.getLogger("reincarnation")
@@ -31,7 +31,6 @@ def setup_logging() -> Path:
         root.addHandler(console)
         
     logging.getLogger("comtypes").setLevel(logging.WARNING)
-    
     return log_file
 
 def main() -> int:
@@ -40,6 +39,12 @@ def main() -> int:
 
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
+
+    shared_mem = QSharedMemory("ProjectReincarnation_SingleInstance")
+    if not shared_mem.create(1):
+        log.warning("Application is already running. Exiting duplicate instance.")
+        return 0
+    app._shared_mem = shared_mem 
 
     from backend.mouse_tracker import MouseTracker
     from backend.win_api import FolderHit
@@ -57,7 +62,7 @@ def main() -> int:
     def on_hover(hit: FolderHit, logical_pos: QPoint) -> None:
         if tray.is_paused:
             return
-
+            
         if pocket.isVisible() and pocket.current_path == hit.path and not pocket._is_fading_out:
             return
             

@@ -1,5 +1,6 @@
 import os
 import sys
+from pathlib import Path
 from PyQt6.QtWidgets import QSystemTrayIcon, QMenu, QStyle
 from PyQt6.QtGui import QAction, QIcon
 from ui.settings_window import SettingsWindow
@@ -32,6 +33,10 @@ class AppTrayIcon(QSystemTrayIcon):
         self.settings_action.triggered.connect(self.settings_window.show)
         self.menu.addAction(self.settings_action)
 
+        self.logs_action = QAction("View Logs", self.menu)
+        self.logs_action.triggered.connect(self.open_logs)
+        self.menu.addAction(self.logs_action)
+
         self.pause_action = QAction("Pause", self.menu)
         self.pause_action.triggered.connect(self.toggle_pause)
         self.menu.addAction(self.pause_action)
@@ -43,6 +48,24 @@ class AppTrayIcon(QSystemTrayIcon):
         self.menu.addAction(self.exit_action)
 
         self.setContextMenu(self.menu)
+
+        self.show()
+        self.showMessage(
+            "Folder viewer by reincarnation", 
+            "Widget is active. Go over any folder to see its contents.", 
+            QSystemTrayIcon.MessageIcon.Information, 
+            3000
+        )
+
+    def open_logs(self):
+        """Opens the log file in the default text editor (Notepad)."""
+        log_dir = Path(os.environ.get("LOCALAPPDATA", Path.home())) / "ProjectReincarnation" / "logs"
+        log_file = log_dir / "app.log"
+        if log_file.exists():
+            try:
+                os.startfile(str(log_file))
+            except Exception:
+                pass
 
     def toggle_pause(self):
         self.is_paused = not self.is_paused
