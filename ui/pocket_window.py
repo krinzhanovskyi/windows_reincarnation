@@ -1,17 +1,50 @@
 import os
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QListWidget, QListWidgetItem, 
-                             QFileIconProvider, QStyleOption, QStyle)
+                             QFileIconProvider, QStyleOption, QStyle, QStyledItemDelegate)
 from PyQt6.QtCore import Qt, QTimer, QPoint, QFileInfo, QSize, QPropertyAnimation, QEasingCurve
-from PyQt6.QtGui import QCursor, QPainter
+from PyQt6.QtGui import QCursor, QPainter, QColor
 from backend.config_manager import config
 from backend.icon_extractor import get_file_icon
 from ui.styles import get_pocket_style
+
+def format_bytes(size: int) -> str:
+    if size == 0:
+        return "0 B"
+    for unit in ['B', 'KB', 'MB', 'GB']:
+        if size < 1024.0:
+            return f"{size:.1f} {unit}".replace('.0', '')
+        size /= 1024.0
+    return f"{size:.1f} TB"
+
+class FileItemDelegate(QStyledItemDelegate):
+    def paint(self, painter, option, index):
+        super().paint(painter, option, index)
+        
+        size_str = index.data(Qt.ItemDataRole.UserRole + 1)
+        if size_str:
+            painter.save()
+            font = painter.font()
+            
+            if font.pointSize() > 0:
+                font.setPointSize(max(1, font.pointSize() - 2))
+            elif font.pixelSize() > 0:
+                font.setPixelSize(max(1, font.pixelSize() - 2))
+                
+            painter.setFont(font)
+            painter.setPen(QColor("#888888"))
+            
+            rect = option.rect
+            rect.setRight(rect.right() - 8)
+            painter.drawText(rect, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, size_str)
+            painter.restore()
+
 
 class PocketWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.trigger_pos = None
-        self._is_fading_out = False 
+        self._is_fading_out = False
+        self.current_path = None 
         self.init_ui()
         
         self.mouse_timer = QTimer(self)
@@ -36,8 +69,8 @@ class PocketWindow(QWidget):
         self.update_theme()
 
         self.fade_anim = QPropertyAnimation(self, b"windowOpacity")
-        self.fade_anim.setDuration(150) 
-        self.fade_anim.setEasingCurve(QEasingCurve.Type.InOutQuad) 
+        self.fade_anim.setDuration(150)
+        self.fade_anim.setEasingCurve(QEasingCurve.Type.InOutQuad)
         self.fade_anim.finished.connect(self._on_fade_finished)
 
         layout = QVBoxLayout()
@@ -47,6 +80,7 @@ class PocketWindow(QWidget):
         self.list_widget.itemClicked.connect(self.on_item_clicked)
         
         self.list_widget.setVerticalScrollMode(QListWidget.ScrollMode.ScrollPerPixel)
+        self.list_widget.setItemDelegate(FileItemDelegate(self))
         
         layout.addWidget(self.list_widget)
         self.setLayout(layout)
@@ -86,7 +120,7 @@ class PocketWindow(QWidget):
         self.move(int(target_x), int(target_y))
         
         if not self.isVisible():
-            self.setWindowOpacity(0.0) 
+            self.setWindowOpacity(0.0)
             self.show()
 
         self._is_fading_out = False
@@ -105,8 +139,8 @@ class PocketWindow(QWidget):
 
         dist_x = abs(pos.x() - self.trigger_pos.x())
         dist_y = abs(pos.y() - self.trigger_pos.y())
-        
-        if dist_x < 60 and dist_y < 60:
+
+        if dist_x < 100 and dist_y < 100:
             return
 
         self.hide_window()
@@ -126,7 +160,8 @@ class PocketWindow(QWidget):
             self.hide()
             self._is_fading_out = False
 
-    def set_data(self, folder_name, files):
+    def set_data(self, folder_name, files, folder_path=""):
+        self.current_path = folder_path
         self.list_widget.clear()
         provider = QFileIconProvider()
         
@@ -152,20 +187,27 @@ class PocketWindow(QWidget):
         self.list_widget.addItem(separator)
         
         if not files:
-            empty_item = QListWidgetItem("Папка пуста")
+            empty_item = QListWidgetItem("Folder is empty")
             empty_item.setFlags(Qt.ItemFlag.NoItemFlags)
             empty_item.setForeground(Qt.GlobalColor.gray)
             self.list_widget.addItem(empty_item)
         else:
             for f in files:
                 clean_name = os.path.splitext(f['name'])[0]
-                display_name = clean_name if len(clean_name) < 28 else clean_name[:25] + "..."
+                
+                max_len = 20 if config.show_sizes else 28
+                display_name = clean_name if len(clean_name) <= max_len else clean_name[:max_len-3] + "..."
+                
                 item = QListWidgetItem(display_name)
                 
                 icon = get_file_icon(f['path'], provider)
                 item.setIcon(icon)
-                
                 item.setData(Qt.ItemDataRole.UserRole, f['path'])
+                
+                if config.show_sizes and not f.get('is_dir', False):
+                    size_str = format_bytes(f.get('size', 0))
+                    item.setData(Qt.ItemDataRole.UserRole + 1, size_str)
+                
                 self.list_widget.addItem(item)
         
         calculated_height = (self.list_widget.count() * 32) + 25

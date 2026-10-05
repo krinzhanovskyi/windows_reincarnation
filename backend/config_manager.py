@@ -17,7 +17,8 @@ class _ConfigManager(QObject):
             "max_files": 15,
             "window_width": 300,
             "window_height": 400,
-            "theme": "dark" 
+            "theme": "system",
+            "show_sizes": True 
         }
         self.load()
 
@@ -52,10 +53,14 @@ class _ConfigManager(QObject):
     @property
     def theme(self): return self.data.get("theme", "dark")
 
-    def update_settings(self, max_files, hover_delay, theme):
+    @property
+    def show_sizes(self): return self.data.get("show_sizes", True)
+
+    def update_settings(self, max_files, hover_delay, theme, show_sizes):
         self.data["max_files"] = max_files
         self.data["hover_delay"] = hover_delay
         self.data["theme"] = theme
+        self.data["show_sizes"] = show_sizes
         self.save()
 
 config = _ConfigManager()

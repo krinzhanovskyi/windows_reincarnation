@@ -17,15 +17,21 @@ def setup_logging() -> Path:
     base.mkdir(parents=True, exist_ok=True)
     log_file = base / "app.log"
     fmt = logging.Formatter("%(asctime)s %(levelname)-7s [%(threadName)s] %(name)s: %(message)s")
+    
     file_handler = RotatingFileHandler(log_file, maxBytes=1_000_000, backupCount=3, encoding="utf-8")
     file_handler.setFormatter(fmt)
+    
     root = logging.getLogger()
     root.setLevel(logging.DEBUG if os.environ.get("REINCARNATION_DEBUG") else logging.INFO)
     root.addHandler(file_handler)
+    
     if sys.stderr is not None:
         console = logging.StreamHandler()
         console.setFormatter(fmt)
         root.addHandler(console)
+        
+    logging.getLogger("comtypes").setLevel(logging.WARNING)
+    
     return log_file
 
 def main() -> int:
@@ -51,9 +57,12 @@ def main() -> int:
     def on_hover(hit: FolderHit, logical_pos: QPoint) -> None:
         if tray.is_paused:
             return
+
+        if pocket.isVisible() and pocket.current_path == hit.path and not pocket._is_fading_out:
+            return
             
         files = get_folder_contents(hit.path, max_items=config.max_files)
-        pocket.set_data(hit.name, files)
+        pocket.set_data(hit.name, files, hit.path)
         pocket.show_at(logical_pos.x(), logical_pos.y())
 
     tracker.hover.connect(on_hover)
