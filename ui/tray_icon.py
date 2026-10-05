@@ -1,4 +1,5 @@
 import os
+import sys
 from PyQt6.QtWidgets import QSystemTrayIcon, QMenu, QStyle
 from PyQt6.QtGui import QAction, QIcon
 from ui.settings_window import SettingsWindow
@@ -11,7 +12,11 @@ class AppTrayIcon(QSystemTrayIcon):
         
         self.settings_window = SettingsWindow()
         
-        root_dir = os.path.dirname(os.path.dirname(__file__))
+        if getattr(sys, 'frozen', False):
+            root_dir = sys._MEIPASS
+        else:
+            root_dir = os.path.dirname(os.path.dirname(__file__))
+            
         icon_path = os.path.join(root_dir, 'icon.ico')
         
         if os.path.exists(icon_path):
@@ -33,7 +38,7 @@ class AppTrayIcon(QSystemTrayIcon):
 
         self.menu.addSeparator()
 
-        self.exit_action = QAction("Off", self.menu)
+        self.exit_action = QAction("Exit", self.menu)
         self.exit_action.triggered.connect(self.app.quit)
         self.menu.addAction(self.exit_action)
 
@@ -43,7 +48,7 @@ class AppTrayIcon(QSystemTrayIcon):
         self.is_paused = not self.is_paused
         if self.is_paused:
             self.pause_action.setText("Resume")
-            self.setToolTip("Project Reincarnation (Пауза)")
+            self.setToolTip("Project Reincarnation (Paused)")
         else:
             self.pause_action.setText("Pause")
             self.setToolTip("Project Reincarnation")
