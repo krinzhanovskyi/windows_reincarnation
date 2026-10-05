@@ -5,6 +5,7 @@ from PyQt6.QtCore import Qt, QTimer, QPoint, QFileInfo, QSize
 from PyQt6.QtGui import QCursor, QPainter
 from backend.config_manager import config
 from backend.icon_extractor import get_file_icon
+from ui.styles import get_pocket_style
 
 class PocketWindow(QWidget):
     def __init__(self):
@@ -15,6 +16,8 @@ class PocketWindow(QWidget):
         self.mouse_timer = QTimer(self)
         self.mouse_timer.timeout.connect(self.check_mouse_leave)
         self.mouse_timer.start(50)
+        
+        config.updated.connect(self.update_theme)
 
     def init_ui(self):
         flags = (
@@ -25,62 +28,25 @@ class PocketWindow(QWidget):
         )
         self.setWindowFlags(flags)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setObjectName("PocketWindow")
         
         self.setFixedWidth(config.window_width)
-
-        self.setStyleSheet("""
-            #PocketWindow {
-                background-color: rgba(30, 30, 30, 230);
-                border-radius: 15px;
-                border: 1px solid #555;
-            }
-            QListWidget {
-                background: transparent;
-                border: none;
-                color: white;
-                font-size: 14px;
-                outline: 0;
-            }
-            QListWidget::item {
-                padding: 4px;
-                border-radius: 5px;
-            }
-            QListWidget::item:hover {
-                background-color: rgba(255, 255, 255, 30);
-            }
-            QScrollBar:vertical {
-                border: none;
-                background: rgba(30, 30, 30, 100);
-                width: 6px;
-                border-radius: 3px;
-                margin: 0px 0px 0px 0px;
-            }
-            QScrollBar::handle:vertical {
-                background: rgba(255, 255, 255, 80);
-                min-height: 20px;
-                border-radius: 3px;
-            }
-            QScrollBar::handle:vertical:hover {
-                background: rgba(255, 255, 255, 150);
-            }
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-                height: 0px;
-            }
-        """)
+        self.update_theme()
 
         layout = QVBoxLayout()
-        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setContentsMargins(8, 8, 8, 8)
         self.list_widget = QListWidget(self)
-        self.list_widget.setIconSize(QSize(16, 16))
+        self.list_widget.setIconSize(QSize(18, 18))
         self.list_widget.itemClicked.connect(self.on_item_clicked)
         
         self.list_widget.setVerticalScrollMode(QListWidget.ScrollMode.ScrollPerPixel)
         
         layout.addWidget(self.list_widget)
         self.setLayout(layout)
+
+    def update_theme(self):
+        self.setStyleSheet(get_pocket_style(config.theme))
 
     def paintEvent(self, event):
         opt = QStyleOption()
@@ -100,16 +66,16 @@ class PocketWindow(QWidget):
         self.setFixedWidth(config.window_width)
         self.trigger_pos = QPoint(x, y)
         
-        target_x = x + 5
-        target_y = y + 5
+        target_x = x + 15
+        target_y = y + 15
         
         screen_geo = self.screen().availableGeometry()
         
         if target_x + self.width() > screen_geo.right():
-            target_x = x - self.width() - 5
+            target_x = x - self.width() - 15
             
         if target_y + self.height() > screen_geo.bottom():
-            target_y = y - self.height() - 5
+            target_y = y - self.height() - 15
             
         self.move(int(target_x), int(target_y))
         self.show()
@@ -119,7 +85,6 @@ class PocketWindow(QWidget):
             return
 
         pos = QCursor.pos()
-
         if self.geometry().contains(pos):
             return
 
@@ -136,11 +101,14 @@ class PocketWindow(QWidget):
 
     def set_data(self, folder_name, files):
         self.list_widget.clear()
-        
         provider = QFileIconProvider()
         
         header_item = QListWidgetItem(f"{folder_name}")
         header_item.setFlags(Qt.ItemFlag.NoItemFlags)
+        
+        font = header_item.font()
+        font.setBold(True)
+        header_item.setFont(font)
         
         if files:
             first_file_info = QFileInfo(files[0]['path'])
@@ -153,16 +121,19 @@ class PocketWindow(QWidget):
         
         separator = QListWidgetItem("─" * 25)
         separator.setFlags(Qt.ItemFlag.NoItemFlags)
+        separator.setForeground(Qt.GlobalColor.gray)
         self.list_widget.addItem(separator)
         
         if not files:
             empty_item = QListWidgetItem("Folder is leer")
             empty_item.setFlags(Qt.ItemFlag.NoItemFlags)
+            empty_item.setForeground(Qt.GlobalColor.gray)
             self.list_widget.addItem(empty_item)
         else:
             for f in files:
-                name = f['name'] if len(f['name']) < 25 else f['name'][:22] + "..."
-                item = QListWidgetItem(name)
+                clean_name = os.path.splitext(f['name'])[0]
+                display_name = clean_name if len(clean_name) < 28 else clean_name[:25] + "..."
+                item = QListWidgetItem(display_name)
                 
                 icon = get_file_icon(f['path'], provider)
                 item.setIcon(icon)
@@ -170,7 +141,7 @@ class PocketWindow(QWidget):
                 item.setData(Qt.ItemDataRole.UserRole, f['path'])
                 self.list_widget.addItem(item)
         
-        calculated_height = (self.list_widget.count() * 28) + 25
+        calculated_height = (self.list_widget.count() * 32) + 25
         final_height = min(calculated_height, config.window_height)
         self.setFixedHeight(final_height)
 

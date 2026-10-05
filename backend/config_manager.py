@@ -16,7 +16,8 @@ class _ConfigManager(QObject):
             "hover_delay": 0.5,
             "max_files": 15,
             "window_width": 300,
-            "window_height": 400
+            "window_height": 400,
+            "theme": "dark" 
         }
         self.load()
 
@@ -48,9 +49,13 @@ class _ConfigManager(QObject):
     @property
     def window_height(self): return self.data.get("window_height", 400)
 
-    def update_settings(self, max_files, hover_delay):
+    @property
+    def theme(self): return self.data.get("theme", "dark")
+
+    def update_settings(self, max_files, hover_delay, theme):
         self.data["max_files"] = max_files
         self.data["hover_delay"] = hover_delay
+        self.data["theme"] = theme
         self.save()
 
 config = _ConfigManager()
