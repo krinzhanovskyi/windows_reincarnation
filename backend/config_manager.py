@@ -2,6 +2,7 @@ import json
 import os
 from pathlib import Path
 from PyQt6.QtCore import QObject, pyqtSignal
+from backend.autorun import set_startup
 
 class _ConfigManager(QObject):
     updated = pyqtSignal()
@@ -17,10 +18,13 @@ class _ConfigManager(QObject):
             "max_files": 15,
             "window_width": 300,
             "window_height": 400,
-            "theme": "system",
-            "show_sizes": True 
+            "theme": "dark",
+            "show_sizes": True,
+            "autorun": False
         }
         self.load()
+        
+        set_startup(self.autorun)
 
     def load(self):
         if self.config_file.exists():
@@ -55,12 +59,18 @@ class _ConfigManager(QObject):
 
     @property
     def show_sizes(self): return self.data.get("show_sizes", True)
+    
+    @property
+    def autorun(self): return self.data.get("autorun", False)
 
-    def update_settings(self, max_files, hover_delay, theme, show_sizes):
+    def update_settings(self, max_files, hover_delay, theme, show_sizes, autorun):
         self.data["max_files"] = max_files
         self.data["hover_delay"] = hover_delay
         self.data["theme"] = theme
         self.data["show_sizes"] = show_sizes
+        self.data["autorun"] = autorun
         self.save()
+        
+        set_startup(autorun)
 
 config = _ConfigManager()
