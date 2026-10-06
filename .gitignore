@@ -11,4 +11,7 @@ env/
 Thumbs.db
 Desktop.ini
 
-#
+#App
+ProjectReincarnation.spec
+build/
+dist/
