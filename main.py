@@ -4,10 +4,11 @@ import logging
 import os
 import signal
 import sys
+import ctypes
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
-from PyQt6.QtCore import QPoint, QSharedMemory
+from PyQt6.QtCore import QPoint
 from PyQt6.QtWidgets import QApplication
 
 log = logging.getLogger("reincarnation")
@@ -37,14 +38,14 @@ def main() -> int:
     log_file = setup_logging()
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-    app = QApplication(sys.argv)
-    app.setQuitOnLastWindowClosed(False)
-
-    shared_mem = QSharedMemory("ProjectReincarnation_SingleInstance")
-    if not shared_mem.create(1):
+    mutex_name = "ProjectReincarnation_SingleInstanceMutex"
+    mutex = ctypes.windll.kernel32.CreateMutexW(None, False, mutex_name)
+    if ctypes.windll.kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
         log.warning("Application is already running. Exiting duplicate instance.")
         return 0
-    app._shared_mem = shared_mem 
+
+    app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(False)
 
     from backend.mouse_tracker import MouseTracker
     from backend.win_api import FolderHit
@@ -75,7 +76,13 @@ def main() -> int:
 
     log.info("Project Reincarnation started, log: %s", log_file)
     tracker.start()
-    return app.exec()
+    
+    exit_code = app.exec()
+    
+    if mutex:
+        ctypes.windll.kernel32.CloseHandle(mutex)
+        
+    return exit_code
 
 if __name__ == "__main__":
     sys.exit(main())

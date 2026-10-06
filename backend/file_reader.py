@@ -1,36 +1,39 @@
 import os
-from pathlib import Path
+import logging
 
-def get_folder_contents(folder_path, max_items=15):
-    if not folder_path or not os.path.exists(folder_path):
+log = logging.getLogger("reincarnation")
+
+def get_folder_contents(folder_path: str, max_items: int = 15) -> list[dict]:
+    if not os.path.exists(folder_path) or not os.path.isdir(folder_path):
         return []
 
+    files = []
     try:
-        path_obj = Path(folder_path)
-        items = []
-
-        for item in path_obj.iterdir():
-            if item.name.startswith('.') or item.name.lower() == 'desktop.ini':
-                continue
-            
-            is_dir = item.is_dir()
-            
-            stat = item.stat()
-            items.append({
-                'name': item.name,
-                'path': str(item),
-                'is_dir': is_dir,
-                'size': stat.st_size if not is_dir else 0,
-                'modified': stat.st_mtime
-            })
-
-        items.sort(key=lambda x: (not x['is_dir'], -x['modified']))
-
-        return items[:max_items]
-
+        with os.scandir(folder_path) as entries:
+            for entry in entries:
+                if entry.name.startswith('.') or entry.is_symlink():
+                    continue
+                    
+                try:
+                    is_dir = entry.is_dir()
+                    stat = entry.stat()
+                    
+                    files.append({
+                        'name': entry.name,
+                        'path': entry.path,
+                        'is_dir': is_dir,
+                        'size': stat.st_size if not is_dir else 0
+                    })
+                except (PermissionError, FileNotFoundError):
+                    pass
+                    
     except PermissionError:
-        print(f"[!] Can't open folder: {folder_path}")
+        log.warning("Permission denied to read folder: %s", folder_path)
         return []
     except Exception as e:
-        print(f"[!] Folder read error {folder_path}: {e}")
+        log.error("Error reading folder %s: %s", folder_path, e)
         return []
+
+    files.sort(key=lambda x: (not x['is_dir'], x['name'].lower()))
+
+    return files[:max_items]
